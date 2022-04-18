@@ -113,12 +113,17 @@ ui <- fluidPage(
   fluidRow(
     column(4,
       div(
+        img(src = "wcb_logo.png", style="padding-top: 5%; width: 400px"),
+        h2("Trans-ordle"),
+        textOutput("blurb")
+      ),     
+      div(
         class = "guesses",
-        h3("Trans-ordle"),
         uiOutput("previous_guesses"),
         uiOutput("current_guess"),
         uiOutput("endgame"),
-        uiOutput("new_game_ui")
+        uiOutput("new_game_ui"),
+        img(src = "sanger-codon-circle-prints.jpeg", style="padding-top: 5%; width: 400px")
       )
     ),
     column(8,
@@ -177,23 +182,25 @@ ui <- fluidPage(
 
 
 server <- function(input, output) {
-  target_word <- reactiveVal("kkkkk")
-  #target_word <- reactiveVal(sample(words_common, 1))
+  
+  output$blurb<-renderText("Transcribe and Translate to make words!")
+  
+  target_word <- reactiveVal(sample(words_common, 1))
   all_guesses <- reactiveVal(list())
   finished <- reactiveVal(FALSE)
   current_guess_letters <- reactiveVal(character(0))
+  guess_counter <- reactiveVal(0)
   
   reset_game <- function() {
-    target_word <- reactiveVal("kkkkk")
-    #target_word(sample(words_common, 1))
+    target_word(sample(words_common, 1))
     all_guesses(list())
+    guess_counter(0)
     finished(FALSE)
   }
-  
-  
+
   observeEvent(input$Enter, {
     guess <- paste(current_guess_letters(), collapse = "")
-    
+    guess_counter(guess_counter()+1)
     if (! guess %in% words_all)
       return()
     
@@ -212,6 +219,10 @@ server <- function(input, output) {
     all_guesses(all_guesses_new)
     
     if (isTRUE(check_result$win)) {
+      finished(TRUE)
+    }
+    
+    if (guess_counter()>=5){
       finished(TRUE)
     }
     
@@ -268,8 +279,10 @@ server <- function(input, output) {
   output$new_game_ui <- renderUI({
     if (!finished())
       return()
-    
-    actionButton("new_game", "New Game")
+    tagList(
+      renderText(target_word() %>% str_to_title()),
+      actionButton("new_game", "New Game")
+    )
   })
   
   observeEvent(input$new_game, {
@@ -315,7 +328,7 @@ server <- function(input, output) {
 #  )
   
   output$keyboard <- renderUI({
-    prev_match_type <- map(rev_translate(names(used_letters())),~used_letters()[translate(.x)] %>% unlist()) %>% setNames(rev_translate(names(used_letters())) %>% tolower())
+    prev_match_type <- map(rev_translate(names(used_letters())),~used_letters()[translate(.x)] %>% unlist()) %>% setNames(rev_translate(names(used_letters())) %>% tolower)
     #prev_match_type <- used_letters() 
     print(prev_match_type)
     keyboard <- lapply(keys, function(row) {

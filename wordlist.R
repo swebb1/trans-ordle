@@ -2,8 +2,6 @@
 # http://www.poslarchive.com/math/scrabble/lists/common-5.html
 
 words_common <- c(
-  'kkkkk',
-  'kkkkr',
   'aback',
   'abate',
   'abbey',
@@ -1496,8 +1494,6 @@ words_common <- c(
 
 
 words_all <- c(
-  'kkkkk',
-  'kkkkr',
   'aahed',
   'aalii',
   'aargh',
