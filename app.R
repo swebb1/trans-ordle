@@ -84,7 +84,7 @@ ui <- fluidPage(
   }
   .keyboard .keyboard-row .key.wide-key {
       font-size: 15px;
-      width: 50px;
+      width: 90px;
   }
   .keyboard .keyboard-row .key.correct {
       background-color: #6a5;
@@ -93,6 +93,12 @@ ui <- fluidPage(
   .keyboard .keyboard-row .key.in-word {
       background-color: #db5;
       color: white;
+  }
+  .keyboard .keyboard-row .key.not-word {
+      background-color: #c03221;
+      color: white;
+      font-size: 15px;
+      width: 90px;
   }
   .keyboard .keyboard-row .key.not-in-word {
       background-color: #888;
@@ -186,10 +192,13 @@ server <- function(input, output) {
   output$blurb<-renderText("Transcribe and Translate to make words!")
   
   target_word <- reactiveVal(sample(words_common, 1))
+  ## Set a starting word for demo
+  #target_word <- reactiveVal("stamp")
   all_guesses <- reactiveVal(list())
   finished <- reactiveVal(FALSE)
   current_guess_letters <- reactiveVal(character(0))
   guess_counter <- reactiveVal(0)
+  notword <- reactiveVal(F)
   
   reset_game <- function() {
     target_word(sample(words_common, 1))
@@ -200,10 +209,11 @@ server <- function(input, output) {
 
   observeEvent(input$Enter, {
     guess <- paste(current_guess_letters(), collapse = "")
-    guess_counter(guess_counter()+1)
-    if (! guess %in% words_all)
+    if (! guess %in% words_all){
+      notword(T)
       return()
-    
+    }
+    notword(F)
     # if (input$hard) {
     # # Letters in the target word that the player has previously
     # # guessed correctly.
@@ -212,6 +222,7 @@ server <- function(input, output) {
     #     return
     # }
     
+    guess_counter(guess_counter()+1)
     all_guesses_new <- all_guesses()
     
     check_result <- check_word(guess, target_word())
@@ -222,7 +233,7 @@ server <- function(input, output) {
       finished(TRUE)
     }
     
-    if (guess_counter()>=5){
+    if (guess_counter()>=6){
       finished(TRUE)
     }
     
@@ -330,7 +341,7 @@ server <- function(input, output) {
   output$keyboard <- renderUI({
     prev_match_type <- map(rev_translate(names(used_letters())),~used_letters()[translate(.x)] %>% unlist()) %>% setNames(rev_translate(names(used_letters())) %>% tolower)
     #prev_match_type <- used_letters() 
-    print(prev_match_type)
+    #print(prev_match_type)
     keyboard <- lapply(keys, function(row) {
       row_keys <- lapply(row, function(key) {
         class <- "key"
@@ -340,6 +351,12 @@ server <- function(input, output) {
         }
         if (key %in% c("Enter", "Back")) {
           class <- c(class, "wide-key")
+        }
+        if (key %in% c("Enter")){
+          if(notword()){
+            class <- c(class, "not-word")
+            shinyjs::delay(ms = 2000)
+          }
         }
         actionButton(key, key, class = class)
       })
@@ -368,7 +385,6 @@ server <- function(input, output) {
       current_guess_letters(current_guess_letters()[-length(current_guess_letters())])
     }
   })
-  
   
   output$endgame <- renderUI({
     if (!finished())
